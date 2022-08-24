@@ -30,7 +30,7 @@ p.add_argument('--epochs_til_ckpt', type=int, default=1000,
 p.add_argument('--steps_til_summary', type=int, default=100,
                help='Time interval in seconds until tensorboard summary is saved.')
 p.add_argument('--dataset', type=str, default='bikes',
-               help='Video dataset; one of (cat, bikes)', choices=['cat', 'bikes'])
+               help='Video dataset; one of (cat, bikes, marble)', choices=['cat', 'bikes', 'marble'])
 p.add_argument('--model_type', type=str, default='sine',
                help='Options currently are "sine" (all sine activations), "relu" (all relu activations,'
                     '"nerf" (relu activations and positional encoding as in NeRF), "rbf" (input rbf layer, rest relu)')
@@ -44,7 +44,9 @@ if opt.dataset == 'cat':
     video_path = './data/video_512.npy'
 elif opt.dataset == 'bikes':
     video_path = skvideo.datasets.bikes()
-
+elif opt.dataset == 'marble':
+    video_path = '/content/moving_marble/moving_marble_train.mp4'
+    
 vid_dataset = dataio.Video(video_path)
 coord_dataset = dataio.Implicit3DWrapper(vid_dataset, sidelength=vid_dataset.shape, sample_fraction=opt.sample_frac)
 dataloader = DataLoader(coord_dataset, shuffle=True, batch_size=opt.batch_size, pin_memory=True, num_workers=0)
