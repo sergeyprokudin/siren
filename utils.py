@@ -296,7 +296,7 @@ def hypernet_activation_summary(model, model_input, gt, model_output, writer, to
 
 def write_video_summary(vid_dataset, model, model_input, gt, model_output, writer, total_steps, prefix='train_'):
     resolution = vid_dataset.shape
-    frames = [0, 60, 120, 200]
+    frames = [0, 60]
     Nslice = 10
     with torch.no_grad():
         coords = [dataio.get_mgrid((1, resolution[1], resolution[2]), dim=3)[None,...].cuda() for f in frames]
