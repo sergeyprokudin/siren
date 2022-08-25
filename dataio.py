@@ -644,19 +644,16 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
     
 class VideoDataWrapper(torch.utils.data.Dataset):
     
-    def __init__(self, data_path, sidelength=None, 
+    def __init__(self, data_path, 
                  sample_fraction=1.,
                  training=False):
-
-        if isinstance(sidelength, int):
-            sidelength = 3 * (sidelength,)
 
         video_data = torch.load(data_path)
         mgrid, data = video_data['x'], video_data['y']
         if training:
           mgrid = mgrid[::2]
           data = data[::2]
-
+        self.data_shape = data.shape
         data = (data - 0.5) / 0.5
         self.data = data.view(-1, 3)
         self.mgrid = mgrid.view(-1, 3)
@@ -664,7 +661,7 @@ class VideoDataWrapper(torch.utils.data.Dataset):
         self.N_samples = int(self.sample_fraction * self.mgrid.shape[0])
 
     def __len__(self):
-        return len(self.dataset)
+        return self.data_shape[0]
 
     def __getitem__(self, idx):
         if self.sample_fraction < 1.:
@@ -679,6 +676,33 @@ class VideoDataWrapper(torch.utils.data.Dataset):
         gt_dict = {'img': data}
 
         return in_dict, gt_dict
+
+
+class Video1(Dataset):
+    def __init__(self, path_to_video, training=True):
+        super().__init__()
+        if 'npy' in path_to_video:
+            self.vid = np.load(path_to_video)
+        elif 'mp4' in path_to_video:
+            self.vid = skvideo.io.vread(path_to_video).astype(np.single) / 255.
+        elif '.pt' in path_to_video:
+            video_data = torch.load(path_to_video)
+            if training:
+              self.vid = video_data['y'][::2].clone()
+              self.mgrid = video_data['x'][::2].clone()
+            else:
+              self.vid = video_data['y'].clone()
+              self.mgrid = video_data['x'].clone()
+
+        self.shape = self.vid.shape[:-1]
+        self.channels = self.vid.shape[-1]
+
+    def __len__(self):
+        return 1
+
+    def __getitem__(self, idx):
+        return self.vid
+
 class Implicit3DWrapper(torch.utils.data.Dataset):
     def __init__(self, dataset, sidelength=None, sample_fraction=1.):
 
@@ -686,8 +710,8 @@ class Implicit3DWrapper(torch.utils.data.Dataset):
             sidelength = 3 * (sidelength,)
 
         self.dataset = dataset
-        self.mgrid = get_mgrid(sidelength, dim=3)
-        data = (torch.from_numpy(self.dataset[0]) - 0.5) / 0.5
+        self.mgrid = dataset.mgrid.view(-1, self.dataset.channels)
+        data = (self.dataset[0] - 0.5) / 0.5
         self.data = data.view(-1, self.dataset.channels)
         self.sample_fraction = sample_fraction
         self.N_samples = int(self.sample_fraction * self.mgrid.shape[0])
