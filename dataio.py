@@ -641,7 +641,44 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
 
         return spatial_img, img, gt_dict
 
+    
+class VideoDataWrapper(torch.utils.data.Dataset):
+    
+    def __init__(self, data_path, sidelength=None, 
+                 sample_fraction=1.,
+                 training=False):
 
+        if isinstance(sidelength, int):
+            sidelength = 3 * (sidelength,)
+
+        video_data = torch.load(data_path)
+        mgrid, data = video_data['x'], video_data['y']
+        if training:
+          mgrid = mgrid[::2]
+          data = data[::2]
+
+        data = (data - 0.5) / 0.5
+        self.data = data.view(-1, 3)
+        self.mgrid = mgrid.view(-1, 3)
+        self.sample_fraction = sample_fraction
+        self.N_samples = int(self.sample_fraction * self.mgrid.shape[0])
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, idx):
+        if self.sample_fraction < 1.:
+            coord_idx = torch.randint(0, self.data.shape[0], (self.N_samples,))
+            data = self.data[coord_idx, :]
+            coords = self.mgrid[coord_idx, :]
+        else:
+            coords = self.mgrid
+            data = self.data
+
+        in_dict = {'idx': idx, 'coords': coords}
+        gt_dict = {'img': data}
+
+        return in_dict, gt_dict
 class Implicit3DWrapper(torch.utils.data.Dataset):
     def __init__(self, dataset, sidelength=None, sample_fraction=1.):
 
