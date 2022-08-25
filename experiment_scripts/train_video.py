@@ -65,8 +65,8 @@ root_path = os.path.join(opt.logging_root, opt.experiment_name)
 
 # Define the loss
 loss_fn = partial(loss_functions.image_mse, None)
-#summary_fn = partial(utils.write_video_summary, vid_dataset)
+summary_fn = partial(utils.write_video_summary, vid_dataset)
 
 training.train(model=model, train_dataloader=dataloader, epochs=opt.num_epochs, lr=opt.lr,
                steps_til_summary=opt.steps_til_summary, epochs_til_checkpoint=opt.epochs_til_ckpt,
-               model_dir=root_path, loss_fn=loss_fn, summary_fn=None)
+               model_dir=root_path, loss_fn=loss_fn, summary_fn=summary_fn)
