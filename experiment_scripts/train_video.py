@@ -45,18 +45,18 @@ if opt.dataset == 'cat':
 elif opt.dataset == 'bikes':
     video_path = skvideo.datasets.bikes()
 elif opt.dataset == 'marble':
-    video_path = '/content/moving_marble/moving_marble_train.mp4'
-    
-vid_dataset = dataio.Video(video_path)
+    video_path = '/content/moving_marble.pt'
+
+vid_dataset = dataio.Video1(video_path)
 coord_dataset = dataio.Implicit3DWrapper(vid_dataset, sidelength=vid_dataset.shape, sample_fraction=opt.sample_frac)
 dataloader = DataLoader(coord_dataset, shuffle=True, batch_size=opt.batch_size, pin_memory=True, num_workers=0)
 
 # Define the model.
 if opt.model_type == 'sine' or opt.model_type == 'relu' or opt.model_type == 'tanh':
-    model = modules.SingleBVPNet(type=opt.model_type, in_features=3, out_features=vid_dataset.channels,
+    model = modules.SingleBVPNet(type=opt.model_type, in_features=3, out_features=3,
                                  mode='mlp', hidden_features=1024, num_hidden_layers=3)
 elif opt.model_type == 'rbf' or opt.model_type == 'nerf':
-    model = modules.SingleBVPNet(type='relu', in_features=3, out_features=vid_dataset.channels, mode=opt.model_type)
+    model = modules.SingleBVPNet(type='relu', in_features=3, out_features=3, mode=opt.model_type)
 else:
     raise NotImplementedError
 model.cuda()
@@ -65,8 +65,8 @@ root_path = os.path.join(opt.logging_root, opt.experiment_name)
 
 # Define the loss
 loss_fn = partial(loss_functions.image_mse, None)
-summary_fn = partial(utils.write_video_summary, vid_dataset)
+#summary_fn = partial(utils.write_video_summary, vid_dataset)
 
 training.train(model=model, train_dataloader=dataloader, epochs=opt.num_epochs, lr=opt.lr,
                steps_til_summary=opt.steps_til_summary, epochs_til_checkpoint=opt.epochs_til_ckpt,
-               model_dir=root_path, loss_fn=loss_fn, summary_fn=summary_fn)
+               model_dir=root_path, loss_fn=loss_fn, summary_fn=None)
